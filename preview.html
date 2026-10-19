@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caça ao Objeto Bíblico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Gochi+Hand&family=Nunito:wght@500;700;900&display=swap">
+<style>
+/* Layout: one scrapbook page sized to the screen for screen-sharing. The verse sticker fills the stage and its type is fitted to the space; the timer stamp stays pinned to the page corner; host controls float in a dock; reveals pop up as sticky notes. Same tokens as Louvor Karaokê, single light look by design. */
+:root{
+  --paper:#fff8ea; --paper2:#fff1d6; --ink:#2b2340; --ink2:#5a4f78; --muted:#8a7fa8;
+  --pink:#ff6fae; --yellow:#ffd23f; --mint:#5be3b0; --sky:#5ec8ff; --lilac:#b08cff; --orange:#ff9b54;
+  --good:#2ec489; --bad:#ff5d7a;
+  --display:"Fredoka", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --hand:"Gochi Hand", "Comic Sans MS", cursive;
+  --body:"Nunito", "Segoe UI", Roboto, sans-serif;
+  --r:20px; --bw:3px;
+  --gut:clamp(16px,2.6vw,44px);
+  --stamp:clamp(92px,min(10.5vw,17vh),176px);
+  --dock-h:76px;
+  color-scheme:light;
+}
+@property --p{syntax:"<number>";inherits:true;initial-value:1}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0;font-family:var(--body);color:var(--ink);background:var(--paper);line-height:1.45;overflow-x:hidden;
+  background-image:
+    radial-gradient(rgba(43,35,64,.07) 1px, transparent 1.4px),
+    linear-gradient(transparent 31px, rgba(94,200,255,.16) 32px);
+  background-size:22px 22px, 100% 32px;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+h1,h2,h3{margin:0;text-wrap:balance;font-family:var(--display);line-height:1.05;font-weight:700}
+:focus-visible{outline:3px dashed var(--ink);outline-offset:3px}
+svg{display:block;flex:none}
+
+/* ---------- stage frame ---------- */
+.app{
+  position:relative;height:100vh;height:100dvh;min-height:500px;display:grid;grid-template-rows:auto minmax(0,1fr);gap:clamp(14px,2.4vh,28px);
+  padding-top:max(clamp(14px,2.4vh,28px),env(safe-area-inset-top,0px));
+  padding-bottom:calc(var(--dock-h) + clamp(22px,3.4vh,40px) + env(safe-area-inset-bottom,0px));
+  padding-left:max(var(--gut),env(safe-area-inset-left,0px));padding-right:max(var(--gut),env(safe-area-inset-right,0px));
+}
+
+/* ---------- top strip ---------- */
+.top{display:flex;align-items:center;gap:clamp(14px,2.4vw,36px);padding-right:calc(var(--stamp) * .9);min-width:0}
+.brand{display:flex;align-items:center;gap:12px;flex:none;text-align:left;border-radius:14px}
+.lens{width:clamp(40px,4.4vh,52px);aspect-ratio:1;border-radius:16px;background:var(--yellow);border:var(--bw) solid var(--ink);box-shadow:4px 4px 0 var(--ink);display:grid;place-items:center;transform:rotate(-8deg);transition:transform .2s}
+.brand:hover .lens{transform:rotate(6deg)}
+.lens svg{width:58%;height:58%}
+.brand-name{display:block;font-family:var(--display);font-weight:700;line-height:1.05;font-size:clamp(19px,min(2.1vw,3.6vh),32px);letter-spacing:-.01em}
+.brand small{display:block;font-family:var(--hand);font-size:clamp(15px,min(1.4vw,2.4vh),21px);color:var(--ink2);font-weight:400;line-height:1.1}
+.round{display:flex;align-items:center;gap:14px;flex:1;min-width:0;max-width:520px}
+.round b{font-family:var(--display);font-weight:600;font-size:clamp(16px,min(1.6vw,2.8vh),24px);white-space:nowrap;font-variant-numeric:tabular-nums}
+.progress{position:relative;flex:1;min-width:60px;height:16px;border-radius:999px;background:#fff;border:2px solid var(--ink);overflow:hidden}
+.progress i{position:absolute;inset:0;width:0%;background:repeating-linear-gradient(-45deg,var(--sky) 0 10px,var(--mint) 10px 20px);border-right:2px solid var(--ink);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+
+/* ---------- verse page ---------- */
+.stage{position:relative;min-height:0;display:grid}
+.page{
+  --tape:var(--pink); --tape2:var(--sky);
+  position:relative;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:clamp(12px,2.2vh,28px);
+  padding:clamp(24px,4vh,52px) clamp(22px,3.6vw,64px) clamp(22px,3.6vh,44px);
+  background:#fff;border:var(--bw) solid var(--ink);border-radius:28px;box-shadow:8px 8px 0 var(--ink);
+}
+.page.in-next{animation:in-next .5s cubic-bezier(.2,.8,.2,1) both}
+.page.in-prev{animation:in-prev .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes in-next{from{opacity:0;transform:translateX(70px) rotate(1.4deg)}to{opacity:1;transform:none}}
+@keyframes in-prev{from{opacity:0;transform:translateX(-70px) rotate(-1.4deg)}to{opacity:1;transform:none}}
+.tape{position:absolute;width:clamp(70px,7vw,108px);height:clamp(20px,2.6vh,28px);background:var(--tape);opacity:.92;transform:rotate(-6deg);top:-14px;left:clamp(22px,3vw,48px);border-left:2px dashed rgba(255,255,255,.7);border-right:2px dashed rgba(255,255,255,.7);box-shadow:0 2px 4px rgba(43,35,64,.15)}
+.tape.b{top:auto;bottom:-13px;left:auto;right:clamp(40px,9vw,160px);transform:rotate(5deg);background:var(--tape2)}
+
+.head{display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;padding-right:calc(var(--stamp) * .62);min-width:0}
+.head h2{font-size:clamp(24px,min(3.1vw,5.4vh),60px);letter-spacing:-.015em;margin-right:6px}
+.tags{display:flex;gap:10px;flex-wrap:wrap}
+.tag{font-family:var(--display);font-weight:600;font-size:clamp(14px,min(1.4vw,2.4vh),22px);padding:.18em .7em;border-radius:12px;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);white-space:nowrap;background:var(--sky);transform:rotate(-1.5deg)}
+.tag.kind{background:var(--orange);transform:rotate(1.5deg)}
+.tag.kind.creative{background:var(--mint)}
+
+.verse-box{min-height:0;overflow:hidden;display:grid;align-content:center}
+.verse{margin:0;font-family:var(--display);font-weight:500;font-size:48px;line-height:1.16;letter-spacing:-.012em;text-wrap:pretty;text-indent:-.42em;padding-left:.42em}
+
+.challenge{justify-self:start;margin:0 0 4px;max-width:100%;padding:.34em .9em .4em;background:var(--yellow);border:var(--bw) solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 var(--ink);font-family:var(--display);font-weight:700;font-size:clamp(19px,min(2.5vw,4.4vh),46px);line-height:1.12;transform:rotate(-1deg);text-wrap:balance}
+
+/* ---------- timer stamp ---------- */
+.stamp{
+  --ring:var(--mint);
+  position:absolute;z-index:3;top:calc(var(--stamp) * -.46);right:calc(var(--stamp) * -.16);width:var(--stamp);aspect-ratio:1;border-radius:50%;
+  background:conic-gradient(var(--ring) calc(var(--p) * 1turn), var(--paper2) 0);
+  border:var(--bw) solid var(--ink);box-shadow:5px 5px 0 var(--ink);display:grid;place-items:center;rotate:6deg;
+  transition:--p 1s linear;
+}
+.stamp.snap{transition:none}
+.dial{width:76%;aspect-ratio:1;border-radius:50%;background:#fff;border:var(--bw) solid var(--ink);display:grid;place-content:center;text-align:center;transition:background .25s}
+.dial b{font-family:var(--display);font-weight:700;font-size:calc(var(--stamp) * .36);line-height:.9;font-variant-numeric:tabular-nums;display:block}
+.dial span{font-family:var(--hand);font-size:calc(var(--stamp) * .115);color:var(--ink2);line-height:1.1}
+.stamp.hurry{--ring:var(--pink)}
+.stamp.hurry .dial,.stamp.done .dial{background:var(--pink)}
+.stamp.hurry .dial span,.stamp.done .dial span{color:var(--ink)}
+.stamp.done{--ring:var(--pink)}
+.dial b.beat{animation:beat .5s cubic-bezier(.2,.9,.2,1.2)}
+@keyframes beat{0%{transform:scale(1.35)}100%{transform:scale(1)}}
+.bump{position:absolute;right:94%;top:28%;font-family:var(--display);font-weight:700;font-size:calc(var(--stamp) * .2);line-height:1.1;padding:.05em .45em;background:var(--yellow);border:2px solid var(--ink);border-radius:999px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap;pointer-events:none;opacity:0}
+.bump.go{animation:bump 1.2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes bump{0%{opacity:0;transform:translateX(30px) scale(.5)}20%{opacity:1;transform:scale(1.12)}75%{opacity:1;transform:translateY(-10px)}100%{opacity:0;transform:translateY(-22px)}}
+
+/* ---------- dock ---------- */
+.dock{
+  position:fixed;z-index:20;left:50%;bottom:calc(clamp(12px,2.2vh,26px) + env(safe-area-inset-bottom,0px));translate:-50% 0;
+  display:flex;align-items:center;padding:8px;max-width:calc(100% - 2 * var(--gut));
+  background:#fff;border:var(--bw) solid var(--ink);border-radius:999px;box-shadow:6px 6px 0 var(--ink);
+  animation:rise .6s .25s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+body.on-title .dock{visibility:hidden}
+.grp{display:flex;align-items:center;gap:8px;padding:0 10px}
+.grp + .grp{border-left:2px dashed rgba(43,35,64,.28)}
+.ico,.pill,.cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);transition:transform .15s,box-shadow .15s,background .2s;white-space:nowrap}
+.ico{width:48px;height:48px;border-radius:50%;background:#fff}
+.ico svg,.pill svg,.cta svg{width:22px;height:22px}
+.ico.q{font-family:var(--display);font-weight:700;font-size:22px}
+.ico.plus{width:auto;padding:0 14px;border-radius:999px;font-family:var(--display);font-weight:700;font-size:17px}
+.pill{height:48px;padding:0 18px 0 14px;border-radius:999px;background:#fff;font-weight:900;font-size:15px}
+.pill.mint[aria-pressed=true]{background:var(--mint)}
+.pill.lilac[aria-pressed=true]{background:var(--lilac)}
+.ico[aria-pressed=true]{background:var(--sky)}
+.cta{height:52px;min-width:9.6em;padding:0 22px 0 18px;border-radius:999px;border-width:var(--bw);box-shadow:3px 3px 0 var(--ink);background:var(--yellow);font-family:var(--display);font-weight:700;font-size:17px}
+.cta.running{background:var(--pink)}
+.ico:hover,.pill:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+.cta:hover{transform:translate(-2px,-2px);box-shadow:5px 5px 0 var(--ink)}
+.ico:active,.pill:active,.cta:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+.swap{display:inline-grid}
+.swap > span{grid-area:1/1}
+.swap .on,[aria-pressed=true] .swap .off{visibility:hidden}
+[aria-pressed=true] .swap .on{visibility:visible}
+
+/* ---------- floating notes ---------- */
+/* sugestões + lição stack on the right so the left-aligned challenge stays readable */
+.notes{position:fixed;z-index:15;right:max(var(--gut),env(safe-area-inset-right,0px));bottom:calc(var(--dock-h) + clamp(30px,4.4vh,52px) + env(safe-area-inset-bottom,0px));width:min(520px,calc(100% - 2 * var(--gut)));display:flex;flex-direction:column;justify-content:flex-end;gap:28px;pointer-events:none}
+.note{
+  position:relative;pointer-events:auto;
+  display:grid;gap:18px;padding:30px 26px 26px;background:#fff;border:var(--bw) solid var(--ink);border-radius:var(--r);box-shadow:8px 8px 0 var(--ink);
+  animation:pop .45s cubic-bezier(.2,.9,.2,1.15) both;transform-origin:bottom right;
+}
+@keyframes pop{from{opacity:0;transform:translateY(30px) scale(.92)}to{opacity:1;transform:none}}
+.note.sug{rotate:1.2deg}
+.note.lesson{rotate:-1.2deg}
+.note.help{position:fixed;z-index:16;left:50%;bottom:calc(var(--dock-h) + clamp(30px,4.4vh,52px) + env(safe-area-inset-bottom,0px));translate:-50% 0;width:min(480px,calc(100% - 2 * var(--gut)));transform-origin:bottom center}
+.note .tape{top:-13px;left:26px;background:var(--mint)}
+.note.lesson .tape{background:var(--lilac)}
+.note.help .tape{background:var(--sky)}
+.note-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.label{font-size:clamp(20px,min(1.9vw,3.2vh),28px);padding:2px 12px;border-radius:10px;border:var(--bw) solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:rotate(-1.5deg);background:var(--mint)}
+.label.l{background:var(--lilac)}
+.label.s{background:var(--sky)}
+.x{width:40px;height:40px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;background:#fff;box-shadow:2px 2px 0 var(--ink);flex:none}
+.x svg{width:18px;height:18px}
+.chips{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:12px}
+.chips li{font-family:var(--display);font-weight:600;font-size:clamp(18px,min(1.9vw,3.2vh),30px);line-height:1.15;padding:.3em .75em;border-radius:999px;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);animation:pop .4s cubic-bezier(.2,.9,.2,1.15) both}
+.chips li:nth-child(5n+1){background:#fff0f7}.chips li:nth-child(5n+2){background:#fff9dd}.chips li:nth-child(5n+3){background:#e8fff5}.chips li:nth-child(5n+4){background:#e9f7ff}.chips li:nth-child(5n+5){background:#f1eaff}
+.lesson-text{margin:0;font-family:var(--display);font-weight:500;font-size:clamp(20px,min(2.2vw,3.8vh),36px);line-height:1.22;text-wrap:pretty}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:10px 16px;margin:0;align-items:center}
+.keys dt{display:flex;gap:6px}
+.keys dd{margin:0;font-weight:700;color:var(--ink2)}
+kbd{display:inline-grid;place-items:center;min-width:34px;height:32px;padding:0 8px;border-radius:9px;border:2px solid var(--ink);background:var(--paper2);box-shadow:2px 2px 0 var(--ink);font-family:var(--display);font-weight:600;font-size:15px}
+.tip{margin:0;padding:12px 14px;border-radius:12px;background:var(--paper2);border:2px dashed var(--ink);font-family:var(--hand);font-size:20px;line-height:1.25;color:var(--ink2)}
+
+/* ---------- time's up ---------- */
+.timeup{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:16px;background:rgba(43,35,64,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:fade .25s both;cursor:pointer}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.slam{display:grid;justify-items:center;gap:18px;text-align:center}
+.slam b{font-family:var(--display);font-weight:700;font-size:clamp(54px,min(11vw,19vh),200px);line-height:.95;letter-spacing:-.03em;color:var(--pink);-webkit-text-stroke:clamp(2px,.35vw,5px) var(--ink);text-shadow:8px 8px 0 var(--yellow),11px 11px 0 var(--ink);animation:slam .8s cubic-bezier(.2,1.1,.3,1) both;text-wrap:balance}
+.slam span{font-family:var(--hand);font-size:clamp(22px,min(3vw,5vh),44px);padding:4px 20px;background:#fff;border:var(--bw) solid var(--ink);border-radius:14px;box-shadow:5px 5px 0 var(--ink);transform:rotate(-2deg);animation:pop .5s .45s cubic-bezier(.2,.9,.2,1.15) both}
+@keyframes slam{0%{opacity:0;transform:scale(3) rotate(-18deg)}60%{opacity:1;transform:scale(.94) rotate(2deg)}100%{transform:scale(1) rotate(-3deg)}}
+.flash{position:fixed;inset:0;z-index:40;background:var(--yellow);pointer-events:none;opacity:0}
+.flash.go{animation:flash .7s ease-out both}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+
+/* ---------- title screen: a cover page that lifts away to reveal the game ---------- */
+.title-screen{
+  position:fixed;inset:0;z-index:25;display:grid;overflow:auto;background:inherit;
+  padding:clamp(70px,13vh,160px) max(var(--gut),env(safe-area-inset-right,0px)) clamp(70px,13vh,160px) max(var(--gut),env(safe-area-inset-left,0px));
+  box-shadow:0 8px 0 var(--ink);transition:transform .7s cubic-bezier(.7,0,.3,1),visibility 0s;
+}
+.title-screen.away{transform:translateY(calc(-100% - 16px));visibility:hidden;transition:transform .7s cubic-bezier(.7,0,.3,1),visibility 0s .7s}
+.objs{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.obj{--s:clamp(54px,min(6.6vw,11.5vh),124px);position:absolute;width:var(--s);height:var(--s);display:grid;place-items:center;font-size:calc(var(--s) * .5);line-height:1;border-radius:50%;border:var(--bw) solid var(--ink);box-shadow:4px 4px 0 var(--ink);animation:pop .5s cubic-bezier(.2,.9,.2,1.2) both}
+.fs-ghost{position:absolute;z-index:2;top:max(18px,env(safe-area-inset-top,0px));right:max(var(--gut),env(safe-area-inset-right,0px))}
+.ts-inner{position:relative;z-index:1;width:min(1640px,100%);margin:auto;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:center;gap:clamp(28px,5vw,96px)}
+.presents{margin:0 0 clamp(12px,2vh,22px);font-family:var(--hand);font-size:clamp(22px,min(2.4vw,4vh),44px);line-height:1.1;color:var(--ink2);rotate:-2deg;animation:fade .6s both}
+.strips{display:grid;justify-items:start;gap:clamp(8px,1.4vh,16px);font-size:clamp(46px,min(8vw,11.5vh),190px);line-height:1;letter-spacing:-.02em}
+.strip{display:block;padding:.06em .3em .12em;background:#fff;border:4px solid var(--ink);border-radius:.16em;box-shadow:7px 7px 0 var(--ink);animation:drop .7s cubic-bezier(.2,.9,.2,1.2) both}
+.strip.s1{rotate:-2.5deg;animation-delay:.1s}
+.strip.s2{rotate:1.5deg;margin-left:.45em;background:var(--yellow);animation-delay:.22s}
+.strip.s3{rotate:-1deg;margin-left:.15em;background:var(--sky);animation-delay:.34s}
+@keyframes drop{from{opacity:0;transform:translateY(-40px) rotate(-8deg)}to{opacity:1;transform:none}}
+.ts-go{margin-top:clamp(24px,4.4vh,48px);animation:rise .6s .6s cubic-bezier(.2,.8,.2,1) both}
+.cta.go{height:auto;min-width:0;gap:.45em;padding:.55em 1.25em .55em 1em;font-size:clamp(18px,min(1.8vw,3.2vh),30px);background:var(--pink);box-shadow:5px 5px 0 var(--ink)}
+.cta.go svg{width:1em;height:1em}
+.cta.go:hover{box-shadow:7px 7px 0 var(--ink)}
+.howto{position:relative;justify-self:center;width:100%;max-width:640px;display:grid;gap:clamp(16px,2.6vh,28px);padding:clamp(28px,4vh,44px) clamp(22px,2.4vw,40px);background:#fff;border:var(--bw) solid var(--ink);border-radius:24px;box-shadow:8px 8px 0 var(--ink);rotate:1deg;animation:pop .6s .5s cubic-bezier(.2,.9,.2,1.15) both}
+.howto .tape{background:var(--mint)}
+.howto .label{justify-self:start}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:clamp(12px,2.2vh,24px);counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;font-family:var(--display);font-weight:500;font-size:clamp(18px,min(1.7vw,3vh),32px);line-height:1.2;text-wrap:pretty}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:1.6em;height:1.6em;margin-top:-.18em;border-radius:50%;background:var(--sky);border:var(--bw) solid var(--ink);box-shadow:2px 2px 0 var(--ink);font-weight:700;font-size:.92em}
+.steps li:nth-child(2)::before{background:var(--yellow)}
+.steps li:nth-child(3)::before{background:var(--pink)}
+.kinds{display:grid;grid-template-columns:auto 1fr;gap:12px 16px;align-items:center;margin:0;padding-top:clamp(16px,2.4vh,26px);border-top:2px dashed rgba(43,35,64,.28)}
+.kinds dt{display:flex}
+.kinds dd{margin:0;font-weight:700;color:var(--ink2);font-size:clamp(15px,min(1.25vw,2.3vh),22px);line-height:1.3}
+
+@media (max-width:760px){
+  .title-screen{padding:128px var(--gut) 96px}
+  .ts-inner{grid-template-columns:1fr;gap:40px}
+  .obj{--s:50px}
+  .obj:nth-child(2),.obj:nth-child(3),.obj:nth-child(4),.obj:nth-child(7),.obj:nth-child(8),.obj:nth-child(9){display:none}
+  .top{flex-wrap:wrap;gap:10px 14px}
+  .round{flex-basis:100%;max-width:none}
+  .head{padding-right:calc(var(--stamp) * .5)}
+  .page{border-radius:22px;box-shadow:6px 6px 0 var(--ink)}
+  .dock{flex-wrap:wrap;justify-content:center;row-gap:8px;border-radius:26px;width:calc(100% - 2 * var(--gut))}
+  .grp{padding:0 4px;gap:6px}
+  .grp + .grp{border-left:0}
+  .ico{width:44px;height:44px}
+  .pill{width:44px;height:44px;padding:0}
+  .pill .swap{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .cta{height:46px;min-width:8.6em;font-size:16px}
+  .notes{left:var(--gut);right:var(--gut);width:auto}
+  .note.sug,.note.lesson{rotate:0deg}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="flash" id="flash" aria-hidden="true"></div>
+
+<section class="title-screen" id="titleScreen" aria-labelledby="gameTitle">
+  <div class="objs" id="objs" aria-hidden="true"></div>
+  <button class="ico fs-ghost" type="button" id="fsGhost" aria-label="Tela cheia" aria-pressed="false" title="Tela cheia (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  <div class="ts-inner">
+    <div>
+      <p class="presents">IBCL Teens apresenta</p>
+      <h1 class="strips" id="gameTitle"><span class="strip s1">Caça ao</span><span class="strip s2">Objeto</span><span class="strip s3">Bíblico</span></h1>
+      <div class="ts-go">
+        <button class="cta go" type="button" id="startBtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg><span id="startLbl">Começar o jogo</span></button>
+      </div>
+    </div>
+    <aside class="howto" aria-labelledby="howtoTitle">
+      <span class="tape" aria-hidden="true"></span>
+      <h2 class="label" id="howtoTitle">Como jogar</h2>
+      <ol class="steps">
+        <li><span>Leia o versículo que aparecer na tela.</span></li>
+        <li><span>Corra e encontre em casa um objeto que combine com ele. São <span id="howtoTime">45</span> segundos!</span></li>
+        <li><span>Volte, mostre o objeto na câmera e explique a sua escolha.</span></li>
+      </ol>
+      <dl class="kinds">
+        <dt><span class="tag kind">Específico</span></dt><dd>Traga o que o desafio pede.</dd>
+        <dt><span class="tag kind creative">Criativo</span></dt><dd>Use a imaginação e capriche na explicação.</dd>
+      </dl>
+    </aside>
+  </div>
+</section>
+
+<div class="app">
+  <header class="top">
+    <button class="brand" type="button" id="homeBtn" aria-label="Voltar para a tela inicial" title="Tela inicial (T)">
+      <span class="lens" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#2b2340" stroke-width="3" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></span>
+      <span class="brand-name">Caça ao Objeto Bíblico<small>IBCL Teens</small></span>
+    </button>
+    <div class="round">
+      <b>Rodada <span id="roundNum">1</span> de <span id="roundTotal">20</span></b>
+      <div class="progress" role="progressbar" aria-label="Rodadas" aria-valuemin="1" id="progress"><i id="progressBar"></i></div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <article class="page" id="page" aria-live="polite">
+      <span class="tape" aria-hidden="true"></span><span class="tape b" aria-hidden="true"></span>
+      <header class="head">
+        <h2 id="title"></h2>
+        <div class="tags"><span class="tag" id="reference"></span><span class="tag kind" id="kind"></span></div>
+      </header>
+      <div class="verse-box" id="verseBox"><p class="verse" id="verse"></p></div>
+      <p class="challenge" id="challenge"></p>
+    </article>
+
+    <div class="stamp" id="stamp" role="timer" aria-label="Tempo restante">
+      <div class="dial"><b id="timer">45</b><span id="timerUnit">segundos</span></div>
+      <span class="bump" id="bump" aria-hidden="true"></span>
+    </div>
+  </main>
+</div>
+
+<div class="notes">
+  <aside class="note lesson" id="lessonNote" aria-labelledby="lessonTitle" hidden>
+    <span class="tape" aria-hidden="true"></span>
+    <div class="note-head">
+      <h3 class="label l" id="lessonTitle">Lição</h3>
+      <button class="x" type="button" data-close="lesson" aria-label="Fechar lição"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <p class="lesson-text" id="lesson"></p>
+  </aside>
+
+  <aside class="note sug" id="sugNote" aria-labelledby="sugTitle" hidden>
+    <span class="tape" aria-hidden="true"></span>
+    <div class="note-head">
+      <h3 class="label" id="sugTitle">Sugestões</h3>
+      <button class="x" type="button" data-close="sug" aria-label="Fechar sugestões"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <ul class="chips" id="suggestions"></ul>
+  </aside>
+</div>
+
+<aside class="note help" id="helpNote" aria-labelledby="helpTitle" hidden>
+  <span class="tape" aria-hidden="true"></span>
+  <div class="note-head">
+    <h3 class="label s" id="helpTitle">Atalhos</h3>
+    <button class="x" type="button" data-close="help" aria-label="Fechar atalhos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <dl class="keys">
+    <dt><kbd>←</kbd><kbd>→</kbd></dt><dd>Trocar de rodada</dd>
+    <dt><kbd>A</kbd></dt><dd>Sortear uma rodada que ainda não saiu</dd>
+    <dt><kbd>Espaço</kbd></dt><dd>Iniciar ou pausar o tempo</dd>
+    <dt><kbd>+</kbd></dt><dd>Adicionar 10 segundos</dd>
+    <dt><kbd>R</kbd></dt><dd>Reiniciar o tempo</dd>
+    <dt><kbd>S</kbd></dt><dd>Mostrar ou ocultar sugestões</dd>
+    <dt><kbd>L</kbd></dt><dd>Mostrar ou ocultar a lição</dd>
+    <dt><kbd>F</kbd></dt><dd>Tela cheia</dd>
+    <dt><kbd>T</kbd></dt><dd>Voltar para a tela inicial</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Fechar as notas</dd>
+  </dl>
+  <p class="tip">Deixe cada um justificar o objeto. Nas rodadas criativas, a explicação vale muito!</p>
+</aside>
+
+<div class="timeup" id="timeup" role="alert" hidden>
+  <div class="slam"><b>Tempo esgotado!</b><span>Mostrem o que encontraram</span></div>
+</div>
+
+<nav class="dock" id="dock" aria-label="Controles do jogo">
+  <div class="grp">
+    <button class="ico" type="button" id="prevBtn" aria-label="Rodada anterior" title="Rodada anterior (←)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="ico" type="button" id="nextBtn" aria-label="Próxima rodada" title="Próxima rodada (→)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+    <button class="ico" type="button" id="randomBtn" aria-label="Sortear rodada" title="Sortear rodada (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg></button>
+  </div>
+  <div class="grp">
+    <button class="pill mint" type="button" id="sugBtn" aria-pressed="false" aria-controls="sugNote" title="Sugestões (S)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-4.2 11.4c.8.7 1.2 1.6 1.2 2.6h6c0-1 .4-1.9 1.2-2.6A6.5 6.5 0 0 0 12 2.5Z"/></svg><span class="swap"><span class="off">Mostrar sugestões</span><span class="on">Ocultar sugestões</span></span></button>
+    <button class="pill lilac" type="button" id="lessonBtn" aria-pressed="false" aria-controls="lessonNote" title="Lição (L)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 4.8 7 4 3.5 4v14c3.5 0 6.5.8 8.5 2.5 2-1.7 5-2.5 8.5-2.5V4C17 4 14 4.8 12 6.5Z"/><path d="M12 6.5v14"/></svg><span class="swap"><span class="off">Mostrar lição</span><span class="on">Ocultar lição</span></span></button>
+  </div>
+  <div class="grp">
+    <button class="cta" type="button" id="timerBtn" title="Iniciar ou pausar (Espaço)"><svg id="playIco" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></svg><svg id="pauseIco" viewBox="0 0 24 24" fill="currentColor" hidden><rect x="5.5" y="4.5" width="4.5" height="15" rx="1.5"/><rect x="14" y="4.5" width="4.5" height="15" rx="1.5"/></svg><span id="timerLbl">Iniciar 45s</span></button>
+    <button class="ico plus" type="button" id="plusBtn" aria-label="Adicionar 10 segundos" title="Adicionar 10 segundos (+)">+10s</button>
+    <button class="ico" type="button" id="resetBtn" aria-label="Reiniciar tempo" title="Reiniciar tempo (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5"/></svg></button>
+  </div>
+  <div class="grp">
+    <button class="ico" type="button" id="fsBtn" aria-label="Tela cheia" aria-pressed="false" title="Tela cheia (F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button class="ico q" type="button" id="helpBtn" aria-label="Atalhos do teclado" aria-pressed="false" aria-controls="helpNote" title="Atalhos (?)">?</button>
+  </div>
+</nav>
+
+<script>
+const rounds = [
+  {
+    title: "Davi e Golias",
+    reference: "1 Samuel 17:40",
+    type: "Específico",
+    verse: "Então pegou seu cajado, escolheu no riacho cinco pedras lisas, colocou-as na bolsa e, com sua atiradeira na mão, aproximou-se do filisteu.",
+    challenge: "Traga algo que represente a batalha de Davi contra Golias!",
+    suggestions: ["Pedra", "Bolsa", "Estilingue de brinquedo", "Objeto pequeno que represente coragem"],
+    lesson: "Davi confiou no Senhor, não no tamanho de suas armas."
+  },
+  {
+    title: "A Luz do Mundo",
+    reference: "Mateus 5:14-16",
+    type: "Específico",
+    verse: "Vocês são a luz do mundo. Não se pode esconder uma cidade construída sobre um monte.",
+    challenge: "Traga algo que produza luz!",
+    suggestions: ["Lanterna", "Luminária", "Vela", "Celular"],
+    lesson: "Nossa vida deve refletir a luz de Cristo."
+  },
+  {
+    title: "A Arca de Noé",
+    reference: "Gênesis 6:14",
+    type: "Criativo",
+    verse: "Faça para você uma arca de madeira de cipreste; divida-a em compartimentos e revista-a de piche por dentro e por fora.",
+    challenge: "Traga algo relacionado a Noé!",
+    suggestions: ["Barquinho", "Animal de pelúcia", "Guarda-chuva", "Objeto de madeira"],
+    lesson: "Noé obedeceu a Deus mesmo diante de uma tarefa enorme."
+  },
+  {
+    title: "A Multiplicação dos Pães",
+    reference: "João 6:9",
+    type: "Específico",
+    verse: "Aqui está um rapaz com cinco pães de cevada e dois peixinhos, mas o que é isto para tanta gente?",
+    challenge: "Traga algo que represente esse milagre!",
+    suggestions: ["Pão", "Biscoito", "Peixe de brinquedo", "Algum alimento"],
+    lesson: "Jesus pode fazer muito com aquilo que parece pouco."
+  },
+  {
+    title: "Daniel na Cova dos Leões",
+    reference: "Daniel 6:16",
+    type: "Criativo",
+    verse: "Então o rei deu ordens, e eles trouxeram Daniel e o jogaram na cova dos leões.",
+    challenge: "Traga algo relacionado a Daniel!",
+    suggestions: ["Leão de pelúcia", "Joelheira", "Travesseiro", "Relógio"],
+    lesson: "Daniel permaneceu fiel a Deus mesmo diante do perigo."
+  },
+  {
+    title: "A Armadura de Deus",
+    reference: "Efésios 6:11",
+    type: "Criativo",
+    verse: "Vistam toda a armadura de Deus, para poderem ficar firmes contra as ciladas do Diabo.",
+    challenge: "Traga algo que represente uma parte da armadura de Deus!",
+    suggestions: ["Cinto", "Sapato", "Capacete de bicicleta", "Tampa como escudo"],
+    lesson: "Precisamos estar preparados espiritualmente para permanecer firmes."
+  },
+  {
+    title: "O Chamado de Abraão",
+    reference: "Gênesis 12:1",
+    type: "Criativo",
+    verse: "Saia da sua terra, do meio dos seus parentes e da casa de seu pai, e vá para a terra que eu lhe mostrarei.",
+    challenge: "Traga algo que represente Abraão!",
+    suggestions: ["Sapato", "Mochila", "Foto da família", "Chave de casa", "Mapa"],
+    lesson: "Ter fé significa confiar em Deus mesmo sem conhecer todo o caminho."
+  },
+  {
+    title: "Onde Está Seu Tesouro",
+    reference: "Mateus 6:21",
+    type: "Criativo",
+    verse: "Pois onde estiver o seu tesouro, aí também estará o seu coração.",
+    challenge: "Traga algo que seja um tesouro para você!",
+    suggestions: ["Foto da família", "Presente especial", "Bíblia", "Medalha", "Lembrança importante"],
+    lesson: "Aquilo que valorizamos revela as prioridades do nosso coração."
+  },
+  {
+    title: "A Palavra é Lâmpada",
+    reference: "Salmos 119:105",
+    type: "Criativo",
+    verse: "A tua palavra é lâmpada que ilumina os meus passos e luz que clareia o meu caminho.",
+    challenge: "Traga algo que ajude você a encontrar um caminho!",
+    suggestions: ["Lanterna", "Mapa", "Bússola", "Celular com GPS"],
+    lesson: "A Palavra de Deus nos orienta nas decisões."
+  },
+  {
+    title: "O Bom Pastor",
+    reference: "Lucas 15:4",
+    type: "Criativo",
+    verse: "Qual de vocês que, possuindo cem ovelhas, e perdendo uma, não deixa as noventa e nove no campo e vai atrás da ovelha perdida, até encontrá-la?",
+    challenge: "Traga algo relacionado à ovelha perdida!",
+    suggestions: ["Ovelha de pelúcia", "Algodão", "Lã", "Objeto que já perdeu e encontrou"],
+    lesson: "Deus se importa com cada pessoa e busca aqueles que estão perdidos."
+  },
+  {
+    title: "Pescadores de Homens",
+    reference: "Mateus 4:19",
+    type: "Criativo",
+    verse: "E disse Jesus: Sigam-me, e eu os farei pescadores de homens.",
+    challenge: "Traga algo que represente um discípulo de Jesus!",
+    suggestions: ["Rede", "Vara de pesca", "Chinelo", "Peixe de brinquedo", "Bíblia"],
+    lesson: "Seguir Jesus significa responder ao seu chamado."
+  },
+  {
+    title: "Jesus Lava os Pés",
+    reference: "João 13:5",
+    type: "Específico",
+    verse: "Depois disso, derramou água numa bacia e começou a lavar os pés dos seus discípulos, enxugando-os com a toalha que estava em sua cintura.",
+    challenge: "Traga algo que Jesus usou para servir seus discípulos!",
+    suggestions: ["Toalha", "Bacia", "Jarra com água"],
+    lesson: "Jesus nos ensinou que a verdadeira grandeza está em servir."
+  },
+  {
+    title: "Jonas e o Grande Peixe",
+    reference: "Jonas 1:17",
+    type: "Criativo",
+    verse: "O Senhor fez com que um grande peixe engolisse Jonas, e ele ficou dentro do peixe três dias e três noites.",
+    challenge: "Traga algo que represente a história de Jonas!",
+    suggestions: ["Peixe de brinquedo", "Guarda-chuva", "Travesseiro", "Objeto relacionado ao mar"],
+    lesson: "Não podemos fugir da presença e da vontade de Deus."
+  },
+  {
+    title: "O Fruto do Espírito",
+    reference: "Gálatas 5:22-23",
+    type: "Criativo",
+    verse: "Mas o fruto do Espírito é amor, alegria, paz, paciência, amabilidade, bondade, fidelidade, mansidão e domínio próprio.",
+    challenge: "Traga algo que represente um fruto do Espírito!",
+    suggestions: ["Fruta", "Coração desenhado", "Presente", "Relógio", "Objeto que represente paz"],
+    lesson: "O Espírito Santo transforma nossas atitudes e nosso caráter."
+  },
+  {
+    title: "A Casa Sobre a Rocha",
+    reference: "Mateus 7:24",
+    type: "Específico",
+    verse: "Portanto, quem ouve estas minhas palavras e as pratica é como um homem prudente que construiu a sua casa sobre a rocha.",
+    challenge: "Traga algo que represente uma construção firme!",
+    suggestions: ["Pedra", "Tijolo", "Bloco de montar", "Miniatura de casa"],
+    lesson: "Nossa vida precisa estar fundamentada na Palavra de Jesus."
+  },
+  {
+    title: "O Nascimento de Jesus",
+    reference: "Lucas 2:7",
+    type: "Específico",
+    verse: "Ela deu à luz o seu primogênito. Envolveu-o em panos e o colocou numa manjedoura, porque não havia lugar para eles na hospedaria.",
+    challenge: "Traga algo relacionado ao nascimento de Jesus!",
+    suggestions: ["Pano", "Cobertor", "Boneca", "Palha decorativa", "Estrela"],
+    lesson: "O Salvador do mundo nasceu em humildade."
+  },
+  {
+    title: "A Fé Como Grão de Mostarda",
+    reference: "Mateus 17:20",
+    type: "Específico",
+    verse: "Se vocês tiverem fé do tamanho de um grão de mostarda, poderão dizer a este monte: Vá daqui para lá, e ele irá.",
+    challenge: "Traga a menor coisa que conseguir encontrar!",
+    suggestions: ["Grão de arroz", "Semente", "Botão", "Pedrinha", "Miçanga"],
+    lesson: "O poder está em Deus, em quem depositamos nossa fé."
+  },
+  {
+    title: "O Filho Pródigo",
+    reference: "Lucas 15:22",
+    type: "Criativo",
+    verse: "Mas o pai disse aos seus servos: Depressa! Tragam a melhor roupa e vistam nele. Coloquem um anel em seu dedo e calçados em seus pés.",
+    challenge: "Traga algo relacionado ao reencontro do filho com seu pai!",
+    suggestions: ["Anel", "Roupa", "Sapato", "Foto da família", "Presente especial"],
+    lesson: "Deus é misericordioso e recebe com amor aqueles que se arrependem."
+  },
+  {
+    title: "Pedro Anda Sobre as Águas",
+    reference: "Mateus 14:29",
+    type: "Criativo",
+    verse: "Venha, respondeu ele. Então Pedro saiu do barco, andou sobre a água e foi na direção de Jesus.",
+    challenge: "Traga algo que represente Pedro andando sobre as águas!",
+    suggestions: ["Chinelo", "Barco de brinquedo", "Copo com água", "Toalha azul", "Objeto relacionado à coragem"],
+    lesson: "Precisamos manter nossos olhos em Jesus mesmo diante das dificuldades."
+  },
+  {
+    title: "O Maior Mandamento",
+    reference: "Mateus 22:37-39",
+    type: "Criativo",
+    verse: "Ame o Senhor, o seu Deus, de todo o seu coração, de toda a sua alma e de todo o seu entendimento. [...] Ame o seu próximo como a si mesmo.",
+    challenge: "Traga algo que represente seu amor por Deus ou pelo próximo!",
+    suggestions: ["Bíblia", "Foto de alguém querido", "Presente", "Carta", "Objeto usado para ajudar alguém"],
+    lesson: "Amar a Deus também deve transformar a maneira como tratamos as pessoas."
+  }
+];
+
+/* ===================== state ===================== */
+const TIME = 45, BONUS = 10;
+const TAPES = [['pink','sky'],['mint','yellow'],['lilac','orange'],['sky','pink'],['yellow','mint'],['orange','lilac']];
+const $ = s => document.querySelector(s);
+// total = the full ring; it grows when bonus time pushes left past it.
+const state = { i: 0, left: TIME, total: TIME, started: false, timer: null, played: new Set([0]), sug: false, lesson: false, help: false };
+const narrow = matchMedia('(max-width:760px)');
+
+/* ===================== round ===================== */
+function render(dir){
+  const r = rounds[state.i], page = $('#page');
+  $('#title').textContent = r.title;
+  $('#reference').textContent = r.reference;
+  $('#kind').textContent = r.type;
+  $('#kind').classList.toggle('creative', r.type.toLowerCase() === 'criativo');
+  $('#verse').textContent = `“${r.verse}”`;
+  $('#challenge').textContent = r.challenge;
+  $('#lesson').textContent = r.lesson;
+  $('#suggestions').replaceChildren(...r.suggestions.map((s, k) => {
+    const li = document.createElement('li'); li.textContent = s; li.style.animationDelay = `${.05 + k * .05}s`; return li;
+  }));
+  $('#roundNum').textContent = state.i + 1;
+  $('#progressBar').style.width = `${((state.i + 1) / rounds.length) * 100}%`;
+  $('#progress').setAttribute('aria-valuenow', state.i + 1);
+  const [a, b] = TAPES[state.i % TAPES.length];
+  page.style.setProperty('--tape', `var(--${a})`);
+  page.style.setProperty('--tape2', `var(--${b})`);
+  setNote('sug', false); setNote('lesson', false);
+  hideTimeUp(); resetTimer();
+  fitVerse();
+  slap(dir);
+}
+function slap(dir){
+  const page = $('#page');
+  page.classList.remove('in-next', 'in-prev'); void page.offsetWidth;
+  page.classList.add(dir < 0 ? 'in-prev' : 'in-next');
+}
+function go(i, dir){ state.i = (i + rounds.length) % rounds.length; state.played.add(state.i); render(dir); }
+function randomRound(){
+  const others = () => rounds.map((_, k) => k).filter(k => k !== state.i);
+  let pool = others().filter(k => !state.played.has(k));
+  if (!pool.length) { state.played = new Set([state.i]); pool = others(); }
+  go(pool[Math.random() * pool.length | 0], 1);
+}
+
+// Grow the verse until it fills its box: binary search on font size.
+function fitVerse(){
+  const box = $('#verseBox'), el = $('#verse');
+  const W = box.clientWidth, H = box.clientHeight;
+  if (!W || !H) return;
+  let lo = 16, hi = Math.max(lo, Math.min(170, W / 5, H / 1.16));
+  for (let n = 0; n < 16 && hi - lo > .5; n++) {
+    const m = (lo + hi) / 2; el.style.fontSize = m + 'px';
+    if (el.scrollHeight <= H && el.scrollWidth <= W) lo = m; else hi = m;
+  }
+  el.style.fontSize = Math.floor(lo) + 'px';
+}
+
+/* ===================== notes ===================== */
+function setNote(name, open){
+  state[name] = open;
+  $(`#${name}Note`).hidden = !open;
+  $(`#${name}Btn`).setAttribute('aria-pressed', open);
+}
+function toggleNote(name){
+  const open = !state[name];
+  if (open && name === 'help') { setNote('sug', false); setNote('lesson', false); }
+  if (open && name !== 'help') {
+    setNote('help', false);
+    if (narrow.matches) setNote(name === 'sug' ? 'lesson' : 'sug', false);
+  }
+  setNote(name, open);
+}
+function closeNotes(){ ['sug', 'lesson', 'help'].forEach(n => setNote(n, false)); }
+
+/* ===================== timer ===================== */
+function paintTimer(snap){
+  const s = $('#stamp'), n = $('#timer'), running = !!state.timer;
+  s.classList.toggle('snap', !!snap);
+  s.style.setProperty('--p', state.left / state.total);
+  n.textContent = state.left;
+  const hurry = state.left <= 10 && state.left > 0 && running;
+  s.classList.toggle('hurry', hurry);
+  s.classList.toggle('done', state.left <= 0);
+  $('#timerUnit').textContent = state.left <= 0 ? 'acabou!' : state.left === 1 ? 'segundo' : 'segundos';
+  if (hurry) { n.classList.remove('beat'); void n.offsetWidth; n.classList.add('beat'); }
+  const btn = $('#timerBtn');
+  btn.classList.toggle('running', running);
+  $('#playIco').hidden = running; $('#pauseIco').hidden = !running;
+  $('#timerLbl').textContent = running ? 'Pausar' : state.started && state.left > 0 ? 'Continuar' : `Iniciar ${state.left > 0 ? state.left : TIME}s`;
+}
+function startTimer(){
+  if (state.left <= 0) { state.left = state.total = TIME; paintTimer(true); }
+  hideTimeUp(); clearInterval(state.timer);
+  state.started = true;
+  state.timer = setInterval(tick, 1000);
+  tone(660, .12, 'triangle', .06);
+  paintTimer();
+}
+function pauseTimer(){ clearInterval(state.timer); state.timer = null; paintTimer(); }
+function toggleTimer(){ state.timer ? pauseTimer() : startTimer(); }
+function resetTimer(){ clearInterval(state.timer); state.timer = null; state.started = false; state.left = state.total = TIME; paintTimer(); }
+// Works in any state; after time's up it hands out a fresh 10s and starts right away.
+function addTime(sec){
+  const done = state.left <= 0;
+  state.left += sec;
+  state.total = done ? sec : Math.max(state.total, state.left);
+  const b = $('#bump'); b.textContent = `+${sec}s`; b.classList.remove('go'); void b.offsetWidth; b.classList.add('go');
+  tone(990, .1, 'triangle', .05);
+  if (done) startTimer(); else paintTimer();
+}
+function tick(){
+  state.left = Math.max(0, state.left - 1);
+  if (state.left <= 0) { clearInterval(state.timer); state.timer = null; state.started = false; paintTimer(); timeUp(); return; }
+  if (state.left <= 5) tone(880, .08, 'square', .035);
+  paintTimer();
+}
+function timeUp(){
+  tone(196, .7, 'sawtooth', .07);
+  const f = $('#flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+  $('#timeup').hidden = false;
+  clearTimeout(timeUp._t); timeUp._t = setTimeout(hideTimeUp, 3600);
+}
+function hideTimeUp(){ clearTimeout(timeUp._t); $('#timeup').hidden = true; }
+
+let actx;
+function tone(freq, dur, type, vol){
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur);
+  } catch {}
+}
+
+/* ===================== title screen ===================== */
+// The objects players might bring, scattered like stickers: [emoji, left %, top %, tilt].
+const OBJS = [['🔦',4,6,-12],['🐑',25,3,8],['🪨',47,6,-6],['🍞',68,2,10],['🧭',86,13,-10],['👟',5,85,8],['⛵',29,89,-8],['📖',51,84,6],['💍',72,90,-12],['☂️',91,83,10]];
+const TINTS = ['#fff0f7','#fff9dd','#e8fff5','#e9f7ff','#f1eaff'];
+const titleScreen = $('#titleScreen');
+const onTitle = () => !titleScreen.classList.contains('away');
+function setTitle(show){
+  titleScreen.classList.toggle('away', !show);
+  titleScreen.inert = !show; $('.app').inert = show; $('#dock').inert = show;
+  document.body.classList.toggle('on-title', show);
+}
+function showTitle(){
+  pauseTimer(); hideTimeUp(); closeNotes();
+  $('#startLbl').textContent = 'Continuar o jogo';
+  setTitle(true);
+}
+function startGame(){
+  if (!onTitle()) return;
+  setTitle(false);
+  const dock = $('#dock'); dock.style.animation = 'none'; void dock.offsetWidth; dock.style.animation = '';
+  slap(1);
+}
+
+/* ===================== fullscreen ===================== */
+function toggleFS(){
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+  else document.exitFullscreen?.();
+}
+const fsBtns = [$('#fsBtn'), $('#fsGhost')];
+if (!document.fullscreenEnabled) fsBtns.forEach(b => b.hidden = true);
+document.addEventListener('fullscreenchange', () => fsBtns.forEach(b => b.setAttribute('aria-pressed', !!document.fullscreenElement)));
+
+/* ===================== wiring ===================== */
+$('#prevBtn').addEventListener('click', () => go(state.i - 1, -1));
+$('#nextBtn').addEventListener('click', () => go(state.i + 1, 1));
+$('#randomBtn').addEventListener('click', randomRound);
+$('#sugBtn').addEventListener('click', () => toggleNote('sug'));
+$('#lessonBtn').addEventListener('click', () => toggleNote('lesson'));
+$('#helpBtn').addEventListener('click', () => toggleNote('help'));
+$('#timerBtn').addEventListener('click', toggleTimer);
+$('#resetBtn').addEventListener('click', resetTimer);
+$('#plusBtn').addEventListener('click', () => addTime(BONUS));
+$('#fsBtn').addEventListener('click', toggleFS);
+$('#fsGhost').addEventListener('click', toggleFS);
+$('#homeBtn').addEventListener('click', showTitle);
+$('#startBtn').addEventListener('click', startGame);
+$('#timeup').addEventListener('click', hideTimeUp);
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => setNote(b.dataset.close, false)));
+
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (onTitle()) {
+    if (e.key === ' ' || (e.key === 'Enter' && !e.target.closest('button'))) { e.preventDefault(); startGame(); }
+    else if (e.key.toLowerCase() === 'f' && !e.repeat) toggleFS();
+    return;
+  }
+  // Space always drives the timer, even when a dock button has focus.
+  if (e.key === ' ') { e.preventDefault(); if (!e.repeat) { if (!$('#timeup').hidden) hideTimeUp(); else toggleTimer(); } return; }
+  if (e.repeat) return;
+  if (!$('#timeup').hidden && e.key !== 'Escape') hideTimeUp();
+  switch (e.key.toLowerCase()) {
+    case 'arrowright': go(state.i + 1, 1); break;
+    case 'arrowleft': go(state.i - 1, -1); break;
+    case 'a': randomRound(); break;
+    case 's': toggleNote('sug'); break;
+    case 'l': toggleNote('lesson'); break;
+    case 'r': resetTimer(); break;
+    case '+': case '=': addTime(BONUS); break;
+    case 'f': toggleFS(); break;
+    case 't': showTitle(); break;
+    case '?': toggleNote('help'); break;
+    case 'escape': hideTimeUp(); closeNotes(); break;
+  }
+});
+document.addEventListener('keyup', e => { if (e.key === ' ') e.preventDefault(); });
+
+const dock = $('#dock');
+new ResizeObserver(() => document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px')).observe(dock);
+new ResizeObserver(fitVerse).observe($('#verseBox'));
+document.fonts?.ready.then(fitVerse);
+
+$('#roundTotal').textContent = rounds.length;
+$('#progress').setAttribute('aria-valuemax', rounds.length);
+$('#howtoTime').textContent = TIME;
+$('#objs').innerHTML = OBJS.map(([e, x, y, r], k) => `<span class="obj" style="left:${x}%;top:${y}%;rotate:${r}deg;background:${TINTS[k % TINTS.length]};animation-delay:${.35 + k * .06}s">${e}</span>`).join('');
+render(1);
+setTitle(true);
+</script>
+</body>
+</html>
